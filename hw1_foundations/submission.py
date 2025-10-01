@@ -162,7 +162,7 @@ def matrix_grad(A: np.ndarray, B: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
-    m, p = A.shape
+    m, _ = A.shape
     _, n = B.shape
     grad_A = np.repeat(np.sum(B, axis=1, keepdims=True), m, axis=1).transpose()
     grad_B = np.repeat(np.sum(A, axis=0, keepdims=True), n, axis=0).transpose()
@@ -189,9 +189,6 @@ def lsq_grad(w: np.ndarray, A: np.ndarray, b: np.ndarray) -> np.ndarray:
     # BEGIN_YOUR_CODE
     # TODO: Implement
     return A.transpose() @ (A @ w - b)
-    x = einsum(A, w, "n d, d -> n") - b
-    y = einsum(A, x, "n d, n -> d")
-    return y
     # END_YOUR_CODE
 
 
@@ -219,14 +216,8 @@ def lsq_finite_diff_grad(w: np.ndarray,
     # BEGIN_YOUR_CODE
     # TODO: Implement
 
-    # x = 0.5 * np.sum(np.square(A @ w - b))
-    # y = 0.5 * np.sum(np.square(A @ w - b))
+    _, d = A.shape
 
-    n, d = A.shape
-
-    # breakpoint()
-    # print("shape", A.shape, w.shape)
-    
     X = np.repeat(np.expand_dims(A @ w - b, axis=1), d, axis=1) + epsilon * A
 
     Y = np.repeat(np.expand_dims(A @ w - b, axis=1), d, axis=1) - epsilon * A
@@ -234,10 +225,7 @@ def lsq_finite_diff_grad(w: np.ndarray,
     x = np.sum(np.square(X.transpose()), axis=1) / 2
     y = np.sum(np.square(Y.transpose()), axis=1) / 2
 
-    out = (x - y) / (2 *epsilon)
-    assert out.shape[0] == d
-    assert len(out.shape) == 1
-    return out
+    return (x - y) / (2 *epsilon)
     # END_YOUR_CODE
 
 
@@ -264,7 +252,7 @@ def gradient_descent_quadratic(x: np.ndarray, w: np.ndarray, theta0: float, lr: 
     """
     # BEGIN_YOUR_CODE
     theta = np.copy(theta0)
-    for i in range(num_steps):
+    for _ in range(num_steps):
         grad = 2 * np.sum(w * (theta - x))
         theta = theta - lr * grad
     return theta
