@@ -140,6 +140,7 @@ def gradient_warmup(w: np.ndarray, c: np.ndarray) -> np.ndarray:
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
+    return 2 * (w - c)
     # END_YOUR_CODE
 
 
@@ -160,6 +161,11 @@ def matrix_grad(A: np.ndarray, B: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
+    m, p = A.shape
+    _, n = B.shape
+    grad_A = np.repeat(np.sum(B, axis=1, keepdims=True), m, axis=1).transpose()
+    grad_B = np.repeat(np.sum(A, axis=0, keepdims=True), n, axis=0).transpose()
+    return (grad_A, grad_B)
     # END_YOUR_CODE
 
 
@@ -181,6 +187,9 @@ def lsq_grad(w: np.ndarray, A: np.ndarray, b: np.ndarray) -> np.ndarray:
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
+    x = einsum(A, w, "n d, d -> n") + b
+    y = einsum(A, x, "n d, n -> d")
+    return y
     # END_YOUR_CODE
 
 
@@ -207,6 +216,21 @@ def lsq_finite_diff_grad(w: np.ndarray,
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
+
+    # x = 0.5 * np.sum(np.square(A @ w - b))
+    # y = 0.5 * np.sum(np.square(A @ w - b))
+
+    n, d = A.shape
+
+    # breakpoint()
+    # print("shape", A.shape, w.shape)
+    X = np.repeat(np.expand_dims(A @ w - b, axis=1), d, axis=1) + epsilon * A
+    Y = np.repeat(np.expand_dims(A @ w - b, axis=1), d, axis=1) - epsilon * A
+
+    x = np.sum(np.square(X.transpose()), axis=1) * 0.5
+    y = np.sum(np.square(Y.transpose()), axis=1) * 0.5
+
+    return (x - y) / (2 *epsilon)
     # END_YOUR_CODE
 
 
@@ -232,5 +256,9 @@ def gradient_descent_quadratic(x: np.ndarray, w: np.ndarray, theta0: float, lr: 
     Gradient: df/dθ = 2 * sum_i w_i * (θ - x_i).
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
+    theta = np.copy(theta0)
+    for i in range(num_steps):
+        grad = 2 * np.sum(w * (theta - x))
+        theta = theta - lr * grad
+    return theta
     # END_YOUR_CODE
