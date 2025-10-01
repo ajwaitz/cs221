@@ -96,9 +96,15 @@ def mask_strictly_upper(scores: np.ndarray) -> np.ndarray:
     # TODO: Implement
     # TODO: AW CHECK this
     l = scores.shape[-1]
-    mask = np.triu(np.ones((l, l)) * -np.inf, k=1)
-    mask = np.expand_dims(mask, axis=0)
-    return scores + mask
+    # mask = np.triu(np.ones((l, l)) * -np.inf, k=1)
+    # mask = np.expand_dims(mask, axis=0)
+
+    mask = np.triu_indices(l, k=1)
+    # breakpoint()
+
+    scores[:, mask[0], mask[1]] = -np.inf
+
+    return scores
     # END_YOUR_CODE
 
 
