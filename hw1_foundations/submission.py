@@ -24,6 +24,9 @@ def linear_project(x: np.ndarray, W: np.ndarray, b: np.ndarray) -> np.ndarray:
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
+    first = einsum(x, W, "b n, n m -> b m")
+    second = first + np.expand_dims(b, axis=0)
+    return second
     # END_YOUR_CODE
 
 
@@ -39,6 +42,7 @@ def split_last_dim_pattern() -> str:
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
+    return "b (g l) -> b g l"
     # END_YOUR_CODE
 
 
@@ -63,6 +67,10 @@ def normalized_inner_products(A: np.ndarray, C: np.ndarray, normalize: bool = Tr
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
+    out = einsum(A, C, "b m d, b n d -> b m n")
+    if normalize:
+        out /= np.sqrt(A.shape[-1])
+    return out
     # END_YOUR_CODE
 
 
@@ -85,6 +93,11 @@ def mask_strictly_upper(scores: np.ndarray) -> np.ndarray:
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
+    # TODO: AW CHECK this
+    l = scores.shape[-1]
+    mask = np.triu(np.ones((l, l)) * -np.inf, k=1)
+    mask = np.expand_dims(mask, axis=0)
+    return scores + mask
     # END_YOUR_CODE
 
 
@@ -106,6 +119,8 @@ def prob_weighted_sum_einsum() -> str:
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
+    # TODO: AW let's verify this
+    return "b n, b n d -> b d"
     # END_YOUR_CODE
 
 
