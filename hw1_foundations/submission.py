@@ -1,3 +1,4 @@
+from re import A
 from typing import Tuple
 import numpy as np
 from einops import einsum, rearrange
@@ -187,7 +188,8 @@ def lsq_grad(w: np.ndarray, A: np.ndarray, b: np.ndarray) -> np.ndarray:
     """
     # BEGIN_YOUR_CODE
     # TODO: Implement
-    x = einsum(A, w, "n d, d -> n") + b
+    return A.transpose() @ (A @ w - b)
+    x = einsum(A, w, "n d, d -> n") - b
     y = einsum(A, x, "n d, n -> d")
     return y
     # END_YOUR_CODE
@@ -224,13 +226,18 @@ def lsq_finite_diff_grad(w: np.ndarray,
 
     # breakpoint()
     # print("shape", A.shape, w.shape)
+    
     X = np.repeat(np.expand_dims(A @ w - b, axis=1), d, axis=1) + epsilon * A
+
     Y = np.repeat(np.expand_dims(A @ w - b, axis=1), d, axis=1) - epsilon * A
 
-    x = np.sum(np.square(X.transpose()), axis=1) * 0.5
-    y = np.sum(np.square(Y.transpose()), axis=1) * 0.5
+    x = np.sum(np.square(X.transpose()), axis=1) / 2
+    y = np.sum(np.square(Y.transpose()), axis=1) / 2
 
-    return (x - y) / (2 *epsilon)
+    out = (x - y) / (2 *epsilon)
+    assert out.shape[0] == d
+    assert len(out.shape) == 1
+    return out
     # END_YOUR_CODE
 
 
