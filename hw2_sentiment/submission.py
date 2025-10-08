@@ -261,7 +261,7 @@ def text_to_average_embedding(text: str, vocab: Vocabulary,
     for token in tokens:
         embedding = vocab.get_vector(token, embedding_layer)
         if average_embedding is None:
-            average_embedding = embedding
+            average_embedding = embedding.clone().detach()
         else:
             average_embedding += embedding
         n += 1
@@ -482,7 +482,7 @@ def train_mlp_classifier(
     model = MLPClassifier(embedding_dim, hidden_dim, num_classes)
 
     train_data = extract_averaged_features(train_texts, vocab, embedding_layer)
-    val_data   = extract_averaged_features(val_texts, vocab, embedding_layer)
+    # val_data   = extract_averaged_features(val_texts, vocab, embedding_layer)
 
     num_batches = math.ceil(train_data.shape[0] / batch_size)
 
