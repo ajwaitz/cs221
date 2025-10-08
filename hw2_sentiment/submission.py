@@ -30,6 +30,11 @@ def build_vocabulary(examples: List[str]) -> Vocabulary:
 
     # BEGIN_YOUR_CODE (our solution is 5 lines of code, but don't worry if you deviate from this)
     # return vocab
+    for example in examples:
+        tokens = example.split(" ")
+        for token in tokens:
+            vocab.add_word(token)
+    return vocab
     # END_YOUR_CODE
 
 
@@ -52,6 +57,11 @@ def text_to_features(text, vocab) -> np.ndarray:
 
     # BEGIN_YOUR_CODE (our solution is 5 lines of code, but don't worry if you deviate from this)
     # return features
+    tokens = text.split(" ")
+    for token in tokens:
+        index = vocab.get_index(token)
+        features[index] += 1
+    return features
     # END_YOUR_CODE
 
 
@@ -81,6 +91,9 @@ def numpy_softmax(logits: np.ndarray) -> np.ndarray:
 
     # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
     # return None
+    e = np.exp(logits)
+    s = np.sum(e, axis=1, keepdims=True)
+    return e / s
     # END_YOUR_CODE
 
 
@@ -103,6 +116,8 @@ def numpy_cross_entropy_loss(predictions: np.ndarray,
     """
     # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
     # return None
+    # scores = (predictions * targets).sum(axis=-1)
+    return -np.sum(targets * np.log(predictions + epsilon))
     # END_YOUR_CODE
 
 
@@ -130,6 +145,10 @@ def numpy_compute_gradients(features: np.ndarray, predictions: np.ndarray,
 
     # BEGIN_YOUR_CODE (our solution is 4 lines of code, but don't worry if you deviate from this)
     # return None
+    d_weights = einsum(features, targets * (predictions - 1), "b f, b k -> b f k")
+    d_bias = targets * (predictions - 1)
+    out = (d_weights.mean(axis=0), d_bias.mean(axis=0))
+    return out
     # END_YOUR_CODE
 
 
@@ -152,6 +171,11 @@ def predict_linear_classifier(features: np.ndarray, labels: np.ndarray, weights:
     """
     # BEGIN_YOUR_CODE (our solution is 6 lines of code, but don't worry if you deviate from this)
     # return 0.0
+    scores = numpy_softmax(features @ weights + bias)
+    predictions = np.zeros_like(scores)
+    np.put_along_axis(arr=predictions, indices=np.expand_dims(np.argmax(scores, axis=1), axis=1), values=1, axis=1)
+    check = (predictions == labels).all(axis=1)
+    return check.astype(int).mean()
     # END_YOUR_CODE
 
 
@@ -187,6 +211,27 @@ def train_linear_classifier(train_features: np.ndarray, train_labels: np.ndarray
 
     # BEGIN_YOUR_CODE (our solution is 11 lines of code, but don't worry if you deviate from this)
     # return weights, bias
+    for i in range(num_epochs):
+        scores = numpy_softmax(train_features @ weights + bias)
+
+        d_weight, d_bias = numpy_compute_gradients(train_features, scores, train_labels)
+
+        print("weight mean", weights.mean(), d_weight.mean())
+        print("bias mean", bias.mean(), d_bias.mean())
+
+        weights = weights - lr * d_weight
+        bias = bias - lr * d_bias
+
+        train_acc = predict_linear_classifier(train_features, train_labels, weights, bias) * 100
+        val_acc   = predict_linear_classifier(val_features, val_labels, weights, bias) * 100
+
+        train_loss = numpy_cross_entropy_loss(scores, train_labels)
+        val_loss = numpy_cross_entropy_loss(numpy_softmax(val_features @ weights + bias), val_labels)
+
+        print(f"Epoch {i}. Train acc {train_acc:.2f}. Val acc {val_acc:.2f}")
+        print(f"           Train loss {train_loss:.2f}. Val loss {val_loss:.2f}")
+
+    return (weights, bias)
     # END_YOUR_CODE
 
 
@@ -210,6 +255,18 @@ def text_to_average_embedding(text: str, vocab: Vocabulary,
     """
     # BEGIN_YOUR_CODE (our solution is 8 lines of code, but don't worry if you deviate from this)
     # return None
+    tokens = text.split(" ")
+    n = 0
+    average_embedding = None
+    for token in tokens:
+        embedding = vocab.get_vector(token, embedding_layer)
+        if average_embedding is None:
+            average_embedding = embedding
+        else:
+            average_embedding += embedding
+        n += 1
+
+    return average_embedding / n
     # END_YOUR_CODE
 
 
@@ -229,6 +286,11 @@ def extract_averaged_features(texts: List[str], vocab: Vocabulary,
     """
     # BEGIN_YOUR_CODE (our solution is 5 lines of code, but don't worry if you deviate from this)
     # return None
+    all_embeds = []
+    for i, text in enumerate(texts):
+        all_embeds.append(text_to_average_embedding(text, vocab, embedding_layer))
+    out = torch.stack(all_embeds, dim=0)
+    return out
     # END_YOUR_CODE
 
 
@@ -264,6 +326,7 @@ class MLPClassifier(nn.Module):
         """
         # BEGIN_YOUR_CODE (our solution is 4 lines of code, but don't worry if you deviate from this)
         # return x
+        return self.fc2(self.relu(self.fc1(x)))
         # END_YOUR_CODE
 
 
@@ -281,6 +344,7 @@ def torch_softmax(logits: torch.Tensor) -> torch.Tensor:
     """
     # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
     # return None
+    return nn.functional.softmax(logits, dim=-1)
     # END_YOUR_CODE
 
 
@@ -301,6 +365,7 @@ def torch_cross_entropy_loss(predictions: torch.Tensor,
     """
     # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
     # return None
+    return nn.functional.cross_entropy(predictions + epsilon, targets.float())
     # END_YOUR_CODE
 
 
@@ -319,6 +384,8 @@ def update_parameter(param: torch.Tensor, grad: torch.Tensor, lr: float) -> None
     """
     # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
     # pass
+    with torch.no_grad():
+        param -= lr * grad
     # END_YOUR_CODE
 
 
@@ -349,6 +416,15 @@ def predict_mlp(texts: List[str], labels: torch.Tensor, classifier: nn.Module,
 
     # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
     # return accuracy
+    inputs = extract_averaged_features(texts, vocab, embedding_layer)
+    outputs = torch_softmax(classifier.forward(inputs))
+
+    scores = torch.zeros_like(labels)
+    scores[torch.argmax(outputs, dim=-1, keepdim=True)] = 1
+
+    accuracy = (scores == labels).all(dim=-1).float().mean()
+
+    return accuracy
     # END_YOUR_CODE
 
 
@@ -398,6 +474,41 @@ def train_mlp_classifier(
 
     # BEGIN_YOUR_CODE (our solution is 35 lines of code, but don't worry if you deviate from this)
     # pass
+    import math
+
+    train_labels = torch.from_numpy(train_labels)
+    val_labels = torch.from_numpy(val_labels)
+
+    model = MLPClassifier(embedding_dim, hidden_dim, num_classes)
+
+    train_data = extract_averaged_features(train_texts, vocab, embedding_layer)
+    val_data   = extract_averaged_features(val_texts, vocab, embedding_layer)
+
+    num_batches = math.ceil(train_data.shape[0] / batch_size)
+
+    for i in range(num_epochs):
+        avg_loss = 0
+        model.train()
+        embedding_layer.train()
+        for b in range(num_batches):
+            train_batch = train_data[b * batch_size : (b+1) * batch_size]
+            out = torch_softmax(model.forward(train_batch))
+
+            loss = torch_cross_entropy_loss(out, train_labels[b * batch_size : (b+1) * batch_size])
+            avg_loss += loss.detach()
+            loss.backward()
+
+            for param in model.parameters():
+                update_parameter(param, param.grad, lr)
+
+        avg_loss /= num_batches
+        model.eval()
+        embedding_layer.eval()
+        val_acc = predict_mlp(val_texts, val_labels, model, embedding_layer, vocab)
+        
+        print(f"Epoch {i}. Avg loss {avg_loss}. Val acc {val_acc:.2f}")
+        
+    return (model, embedding_layer, vocab)
     # END_YOUR_CODE
 
 
