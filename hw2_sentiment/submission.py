@@ -417,13 +417,17 @@ def predict_mlp(texts: List[str], labels: torch.Tensor, classifier: nn.Module,
     # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
     # return accuracy
     inputs = extract_averaged_features(texts, vocab, embedding_layer)
-    outputs = torch_softmax(classifier.forward(inputs))
+    with torch.no_grad():
+        outputs = classifier.forward(inputs)
 
-    # scores = torch.zeros_like(labels)
-    # scores[torch.argmax(outputs, dim=-1, keepdim=True)] = 1
-    scores = nn.functional.one_hot(torch.argmax(outputs,dim=-1), num_classes=labels.shape[-1])
+    outputs = torch.argmax(outputs, dim=-1)
+    _labels = torch.argmax(labels, dim=-1)
 
-    accuracy = (scores == labels).all(dim=-1).float().mean()
+    accuracy = (outputs == _labels).float().mean()
+
+    # scores = nn.functional.one_hot(torch.argmax(outputs,dim=-1), num_classes=labels.shape[-1])
+
+    # accuracy = (scores == labels).all(dim=-1).float().mean()
 
     return accuracy
     # END_YOUR_CODE
@@ -491,6 +495,9 @@ def train_mlp_classifier(
         avg_loss = 0
         model.train()
         embedding_layer.train()
+
+        train_data = train_data[torch.randperm(train_data.shape[0])]
+
         for b in range(num_batches):
             train_batch = train_data[b * batch_size : (b+1) * batch_size]
             out = torch_softmax(model.forward(train_batch))
@@ -501,6 +508,7 @@ def train_mlp_classifier(
 
             for param in model.parameters():
                 update_parameter(param, param.grad, lr)
+                param.grad.zero_()
 
         avg_loss /= num_batches
         model.eval()
