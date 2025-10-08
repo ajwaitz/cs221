@@ -419,8 +419,9 @@ def predict_mlp(texts: List[str], labels: torch.Tensor, classifier: nn.Module,
     inputs = extract_averaged_features(texts, vocab, embedding_layer)
     outputs = torch_softmax(classifier.forward(inputs))
 
-    scores = torch.zeros_like(labels)
-    scores[torch.argmax(outputs, dim=-1, keepdim=True)] = 1
+    # scores = torch.zeros_like(labels)
+    # scores[torch.argmax(outputs, dim=-1, keepdim=True)] = 1
+    scores = nn.functional.one_hot(torch.argmax(outputs,dim=-1), num_classes=labels.shape[-1])
 
     accuracy = (scores == labels).all(dim=-1).float().mean()
 
