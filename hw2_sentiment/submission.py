@@ -57,6 +57,8 @@ def text_to_features(text, vocab) -> np.ndarray:
 
     # BEGIN_YOUR_CODE (our solution is 5 lines of code, but don't worry if you deviate from this)
     # return features
+    if text == "":
+        return features
     tokens = text.split(" ")
     for token in tokens:
         index = vocab.get_index(token)
@@ -147,7 +149,7 @@ def numpy_compute_gradients(features: np.ndarray, predictions: np.ndarray,
     # return None
     d_weights = einsum(features, targets * (predictions - 1), "b f, b k -> b f k")
     d_bias = targets * (predictions - 1)
-    out = (d_weights.mean(axis=0), d_bias.mean(axis=0))
+    out = (d_weights.mean(axis=0), d_bias.mean(axis=0, keepdims=True))
     return out
     # END_YOUR_CODE
 
@@ -175,7 +177,7 @@ def predict_linear_classifier(features: np.ndarray, labels: np.ndarray, weights:
     predictions = np.zeros_like(scores)
     np.put_along_axis(arr=predictions, indices=np.expand_dims(np.argmax(scores, axis=1), axis=1), values=1, axis=1)
     check = (predictions == labels).all(axis=1)
-    return check.astype(int).mean()
+    return check.astype(int).mean().item()
     # END_YOUR_CODE
 
 
@@ -425,11 +427,7 @@ def predict_mlp(texts: List[str], labels: torch.Tensor, classifier: nn.Module,
 
     accuracy = (outputs == _labels).float().mean()
 
-    # scores = nn.functional.one_hot(torch.argmax(outputs,dim=-1), num_classes=labels.shape[-1])
-
-    # accuracy = (scores == labels).all(dim=-1).float().mean()
-
-    return accuracy
+    return accuracy.item()
     # END_YOUR_CODE
 
 
@@ -487,7 +485,6 @@ def train_mlp_classifier(
     model = MLPClassifier(embedding_dim, hidden_dim, num_classes)
 
     train_data = extract_averaged_features(train_texts, vocab, embedding_layer)
-    # val_data   = extract_averaged_features(val_texts, vocab, embedding_layer)
 
     num_batches = math.ceil(train_data.shape[0] / batch_size)
 
@@ -496,13 +493,16 @@ def train_mlp_classifier(
         model.train()
         embedding_layer.train()
 
+        # shuffle
         train_data = train_data[torch.randperm(train_data.shape[0])]
 
         for b in range(num_batches):
-            train_batch = train_data[b * batch_size : (b+1) * batch_size]
+            b_start = b * batch_size
+            b_end = (b+1) * batch_size
+            train_batch = train_data[b_start : b_end]
             out = torch_softmax(model.forward(train_batch))
 
-            loss = torch_cross_entropy_loss(out, train_labels[b * batch_size : (b+1) * batch_size])
+            loss = torch_cross_entropy_loss(out, train_labels[b_start : b_end])
             avg_loss += loss.detach()
             loss.backward()
 
@@ -513,9 +513,11 @@ def train_mlp_classifier(
         avg_loss /= num_batches
         model.eval()
         embedding_layer.eval()
-        val_acc = predict_mlp(val_texts, val_labels, model, embedding_layer, vocab)
+        with torch.no_grad():
+            val_acc = predict_mlp(val_texts, val_labels, model, embedding_layer, vocab)
+            train_acc = predict_mlp(train_texts, train_labels, model, embedding_layer, vocab)
         
-        print(f"Epoch {i}. Avg loss {avg_loss}. Val acc {val_acc:.2f}")
+        print(f"Epoch {i}. Avg loss {avg_loss}. Val acc {val_acc:.2f}. Train acc {train_acc:.2f}")
         
     return (model, embedding_layer, vocab)
     # END_YOUR_CODE
