@@ -93,7 +93,9 @@ def get_stanford_shortest_path_problem() -> ShortestPathProblem:
     city_map = create_stanford_map()
 
     # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    # raise Exception("Not implemented yet")
+    start_location = "6883214482"
+    end_tag = "amenity=food"
     # END_YOUR_CODE
     return ShortestPathProblem(start_location, end_tag, city_map)
 
@@ -125,17 +127,48 @@ class WaypointsShortestPathProblem(SearchProblem):
 
     def start_state(self) -> State:
         # BEGIN_YOUR_CODE (our solution is 6 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+
+        self.tag_map = {}
+        for i, tag in enumerate(self.waypoint_tags):
+            self.tag_map[tag] = i
+
+        start_memory = ["0"] * len(self.tag_map)
+        
+        for tag in self.city_map.tags[self.start_location]:
+            if tag in self.tag_map:
+                start_memory[self.tag_map[tag]] = "1"
+
+        return State(location=self.start_location, memory="".join(start_memory))
         # END_YOUR_CODE
 
     def successors(self, state: State) -> List[Step]:
         # BEGIN_YOUR_CODE (our solution is 11 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+        out = []
+
+        x = self.city_map.distances[state.location]
+        for b, dist in x.items():
+            new_memory = list(state.memory)
+            for tag in self.city_map.tags[b]:
+                if tag in self.tag_map:
+                    new_memory[self.tag_map[tag]] = "1"
+
+            new_state = State(
+                location=b,
+                memory="".join(new_memory)
+            )
+            out.append(Step(action=b, cost=dist, state=new_state))
+   
+        return out
         # END_YOUR_CODE
 
     def is_end(self, state: State) -> bool:
         # BEGIN_YOUR_CODE (our solution is 5 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+        for seen in list(state.memory):
+            if seen != "1":
+                return False
+        return self.end_tag in self.city_map.tags[state.location]
         # END_YOUR_CODE
 
 
