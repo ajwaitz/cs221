@@ -59,7 +59,15 @@ def value_iteration(
         - Returns: An np.ndarray of shape (num_states, num_actions) containing the Q-values.
         """
         # BEGIN_YOUR_CODE (our solution is 2 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+
+        # Sketch: for some given (s, a) pair, we compute \sum_{s'} T(s, a, s') * [R(s, a, s') + \phi * V(s')]
+        # I think...
+
+        a = rewards + discount * v[np.newaxis, np.newaxis, :]
+        b = transitions * a
+
+        return np.sum(b, axis=-1)
         # END_YOUR_CODE
 
     def compute_policy(q: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -72,7 +80,12 @@ def value_iteration(
                    2. `best_values`: An array of shape (num_states,) with the Q-value corresponding to each best action.
         """
         # BEGIN_YOUR_CODE (our solution is 4 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+
+        best_actions = np.argmax(q + tie_breaker, axis=-1)
+        best_values = np.max(q + tie_breaker, axis=-1)
+        
+        return best_actions, best_values
         # END_YOUR_CODE
 
     # Implement the value iteration algorithm.
@@ -87,7 +100,26 @@ def value_iteration(
 
     print('Running value iteration...')
     # BEGIN_YOUR_CODE (our solution is 18 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    # raise Exception("Not implemented yet")
+    is_terminal = np.all(~action_mask, axis=-1)
+
+    v = np.zeros((num_states), dtype=np.float64)
+    converged = False
+
+    while (not converged):
+        q = compute_q(v)
+
+        # q[~action_mask] = 0.0 
+
+        best_actions, best_values = compute_policy(q)
+
+        converged = np.all(best_values - v < epsilon)
+        v = best_values
+        v[is_terminal] = 0.0
+
+    # best_actions[is_terminal] = None
+    return action_ids[best_actions]
+
     # END_YOUR_CODE
 
 
