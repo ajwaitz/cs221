@@ -1,3 +1,4 @@
+from email import policy
 import math, random
 from typing import List, Callable, Tuple, Any, Optional, Iterable
 from einops import reduce, rearrange, einsum
@@ -218,7 +219,10 @@ class ModelBasedMonteCarlo(util.RLAlgorithm):
         policy_idx = self.pi_indices[state_idx]
 
         # BEGIN_YOUR_CODE (our solution is 5 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        if (random.random() < exploration_prob or self.pi_actions[state_idx] is None) and explore:
+            return self.actions_array[random.randint(0, self.num_actions - 1)]
+        else:
+            return self.pi_actions[state_idx]
         # END_YOUR_CODE
 
     # We will call this function with (s, a, r, s'), which is used to update counts and rewards.
@@ -235,7 +239,20 @@ class ModelBasedMonteCarlo(util.RLAlgorithm):
 
         if self.num_iters > 0 and self.num_iters % self.calc_val_iter_every == 0:
             # BEGIN_YOUR_CODE (our solution is 21 line(s) of code, but don't worry if you deviate from this)
-            raise Exception("Not implemented yet")
+            # raise Exception("Not implemented yet") 
+            # print(self.transition_counts)
+            transitions = self.transition_counts / (np.sum(self.transition_counts, axis=-1, keepdims=True) + 0.00001)
+            rewards = self.reward_sums / self.num_iters
+
+            valid_actions = self.valid_actions
+            state_ids = self.state_ids
+            action_ids = self.actions_array
+
+            self.pi_actions = value_iteration(transitions, rewards, self.discount, 
+                                           valid_actions=valid_actions, state_ids=state_ids, 
+                                           action_ids=action_ids)
+                                        
+            # self.pi_actions = best_actions
             # END_YOUR_CODE
             self._sync_policy_indices()
 
