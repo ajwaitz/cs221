@@ -334,7 +334,10 @@ class TabularQLearning(util.RLAlgorithm):
         next_matches = np.where(self.actions_array == next_action)[0]
         next_action_idx = int(next_matches[0])
 
-        utility = reward + self.discount * self.q[next_state_idx][next_action_idx]
+        if terminal:
+            utility = reward
+        else:
+            utility = reward + self.discount * self.q[next_state_idx][next_action_idx]
 
         self.q[state_idx][action_idx] += self.get_step_size() * (utility - self.q[state_idx][action_idx])
         # END_YOUR_CODE
@@ -400,7 +403,10 @@ class FunctionApproxQLearning(util.RLAlgorithm):
 
     def get_q(self, state: np.ndarray, action: int) -> float:
         # BEGIN_YOUR_CODE (our solution is 3 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+        featurized = self.feature_extractor(state)
+        out = featurized @ self.w
+        return out[action]
         # END_YOUR_CODE
 
     # This algorithm will produce an action given a state.
@@ -417,7 +423,12 @@ class FunctionApproxQLearning(util.RLAlgorithm):
             exploration_prob = exploration_prob / math.log(self.num_iters - 100000 + 1)
 
         # BEGIN_YOUR_CODE (our solution is 5 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+        if random.random() < exploration_prob and explore:
+            return random.randint(0, len(self.actions) - 1)
+        else:
+            featurized = self.feature_extractor(state)
+            return np.argmax(featurized @ self.w)
         # END_YOUR_CODE
 
     # Call this function to get the step size to update the weights.
@@ -431,7 +442,17 @@ class FunctionApproxQLearning(util.RLAlgorithm):
     # step_size * (new_value - old_value) * features
     def incorporate_feedback(self, state: np.ndarray, action: int, reward: float, next_state: np.ndarray, terminal: bool) -> None:
         # BEGIN_YOUR_CODE (our solution is 10 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+        next_action = self.get_action(next_state, explore=False)
+
+        if terminal:
+            utility = reward
+        else:
+            utility = reward + self.discount * self.get_q(next_state, next_action)
+        
+        # print(self.w.shape)
+        # print(self.feature_extractor(state).shape)
+        self.w[:, action] += self.get_step_size() * (utility - self.get_q(state, action)) * self.feature_extractor(state)
         # END_YOUR_CODE
 
 ############################################################
