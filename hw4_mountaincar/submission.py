@@ -483,7 +483,22 @@ class ConstrainedQLearning(FunctionApproxQLearning):
             exploration_prob = exploration_prob / math.log(self.num_iters - 100000 + 1)
 
         # BEGIN_YOUR_CODE (our solution is 18 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+        if random.random() < exploration_prob and explore:
+            action = np.arange(len(self.actions))
+            vel = state[1] + (action - 1) * self.force - np.cos(3 * state[0]) * self.gravity
+            while True:
+                proposed_action = random.randint(0, len(self.actions) - 1)
+                if np.abs(vel[proposed_action]) < self.max_speed:
+                    return proposed_action
+        else:
+            action = np.arange(len(self.actions))
+            vel = state[1] + (action - 1) * self.force - np.cos(3 * state[0]) * self.gravity
+            featurized = self.feature_extractor(state)
+            out = np.argsort(-featurized @ self.w)
+            for elem in out:
+                if np.abs(vel[elem]) < self.max_speed:
+                    return elem
         # END_YOUR_CODE
 
 ############################################################
