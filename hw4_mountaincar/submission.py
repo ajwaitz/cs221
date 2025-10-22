@@ -110,7 +110,7 @@ def value_iteration(
     while (not converged):
         q = compute_q(v)
 
-        # q[~action_mask] = 0.0 
+        q[~action_mask] = np.min(q) - 1
 
         best_actions, best_values = compute_policy(q)
 
@@ -118,8 +118,9 @@ def value_iteration(
         v = best_values
         v[is_terminal] = 0.0
 
-    # best_actions[is_terminal] = None
-    return action_ids[best_actions]
+    out = action_ids[best_actions]
+    out[is_terminal] = None
+    return out
 
     # END_YOUR_CODE
 
@@ -222,7 +223,8 @@ class ModelBasedMonteCarlo(util.RLAlgorithm):
         if (random.random() < exploration_prob or self.pi_actions[state_idx] is None) and explore:
             return self.actions_array[random.randint(0, self.num_actions - 1)]
         else:
-            return self.pi_actions[state_idx]
+            # return self.pi_actions[state_idx]
+            return self.actions_array[policy_idx]
         # END_YOUR_CODE
 
     # We will call this function with (s, a, r, s'), which is used to update counts and rewards.
@@ -239,10 +241,17 @@ class ModelBasedMonteCarlo(util.RLAlgorithm):
 
         if self.num_iters > 0 and self.num_iters % self.calc_val_iter_every == 0:
             # BEGIN_YOUR_CODE (our solution is 21 line(s) of code, but don't worry if you deviate from this)
-            # raise Exception("Not implemented yet") 
-            # print(self.transition_counts)
+
+            if terminal:
+                self.valid_actions[next_idx, :] = False
+
             transitions = self.transition_counts / (np.sum(self.transition_counts, axis=-1, keepdims=True) + 0.00001)
-            rewards = self.reward_sums / self.num_iters
+            transitions[np.isnan(transitions)] = 1 / self.num_states
+
+            rewards = self.reward_sums / (self.transition_counts + 0.00001)
+            rewards[np.isnan(rewards)] = 0.0
+
+            # print(rewards, transitions)
 
             valid_actions = self.valid_actions
             state_ids = self.state_ids
@@ -251,8 +260,6 @@ class ModelBasedMonteCarlo(util.RLAlgorithm):
             self.pi_actions = value_iteration(transitions, rewards, self.discount, 
                                            valid_actions=valid_actions, state_ids=state_ids, 
                                            action_ids=action_ids)
-                                        
-            # self.pi_actions = best_actions
             # END_YOUR_CODE
             self._sync_policy_indices()
 
@@ -302,7 +309,11 @@ class TabularQLearning(util.RLAlgorithm):
             exploration_prob = exploration_prob / math.log(self.num_iters - 100000 + 1)
         state_idx = int(self.state_to_index(state))
         # BEGIN_YOUR_CODE (our solution is 4 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+        if (random.random() < exploration_prob) and explore:
+            return self.actions_array[random.randint(0, len(self.actions) - 1)]
+        else:
+            return self.actions_array[np.argmax(self.q[state_idx])]
         # END_YOUR_CODE
 
     # Call this function to get the step size to update the weights.
@@ -316,7 +327,16 @@ class TabularQLearning(util.RLAlgorithm):
         matches = np.where(self.actions_array == action)[0]
         action_idx = int(matches[0])
         # BEGIN_YOUR_CODE (our solution is 9 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+        
+        next_state_idx = int(self.state_to_index(next_state))
+        next_action = self.get_action(next_state, explore=False)
+        next_matches = np.where(self.actions_array == next_action)[0]
+        next_action_idx = int(next_matches[0])
+
+        utility = reward + self.discount * self.q[next_state_idx][next_action_idx]
+
+        self.q[state_idx][action_idx] += self.get_step_size() * (utility - self.q[state_idx][action_idx])
         # END_YOUR_CODE
 
 ############################################################
@@ -344,9 +364,17 @@ def fourier_feature_extractor(
     # doing efficient arithmetic broadcasting in numpy.
 
     # BEGIN_YOUR_CODE (our solution is 7 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
-    # END_YOUR_CODE
+    # raise Exception("Not implemented yet")
+    first = np.array([m * scale[0] * state[0] for m in range(max_coeff + 1)], dtype=np.float64)
 
+    for i in range(1, len(state)):
+        second = np.array([m * scale[i] * state[i] for m in range(max_coeff + 1)], dtype=np.float64)
+        outer = first[np.newaxis, :] + second[:, np.newaxis]
+        first = outer.flatten()
+
+    features = np.cos(np.pi * first)
+
+    # END_YOUR_CODE
     return features
 
 ############################################################
