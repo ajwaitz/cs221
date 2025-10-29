@@ -180,7 +180,10 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         # BEGIN_YOUR_CODE (our solution is 22 line(s) of code, but don't worry if you deviate from this)
         def minimax(game_state: GameState, depth: int, agent_idx: int):
-          if game_state.is_win() or game_state.is_lose() or depth == 0:
+          if depth == 0:
+            return self.evaluation_function(game_state)
+
+          if game_state.is_win() or game_state.is_lose():
             return game_state.get_score(), None
           
           possible_values = []
