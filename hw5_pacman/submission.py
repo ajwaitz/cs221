@@ -272,7 +272,31 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         """
 
         # BEGIN_YOUR_CODE (our solution is 22 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        def minimax(game_state: GameState, depth: int, agent_idx: int):
+          # TODO these two branches function identically since eval_fn := get_score in this case. is this expected?
+          if depth == 0:
+            return self.evaluation_function(game_state), None
+
+          if game_state.is_win() or game_state.is_lose():
+            return game_state.get_score(), None
+          
+          possible_values = []
+          for action in game_state.get_legal_actions(agent_idx):
+            next_agent_idx = (agent_idx + 1) % game_state.get_num_agents()
+            next_game_state = game_state.generate_successor(agent_idx, action)
+            v = (minimax(next_game_state, depth - 1, next_agent_idx)[0], action)
+            possible_values.append(v)
+          
+          if agent_idx == 0:
+            return max(possible_values, key=lambda x: x[0])
+          else:
+            p = 1 / (game_state.get_num_agents() - 1)
+            e_v = sum([p * v[0] for v in possible_values])
+            return e_v, None
+            # return min(possible_values, key=lambda x: x[0])
+        
+        value, action = minimax(game_state, self.depth * game_state.get_num_agents(), 0) 
+        return action
         # END_YOUR_CODE
 
 ######################################################################################
