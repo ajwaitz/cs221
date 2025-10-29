@@ -180,7 +180,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         # BEGIN_YOUR_CODE (our solution is 22 line(s) of code, but don't worry if you deviate from this)
         def minimax(game_state: GameState, depth: int, agent_idx: int):
-          # TODO these two branches function identically since eval_fn := get_score in this case. is this expected?
           if depth == 0:
             return self.evaluation_function(game_state), None
 
@@ -199,7 +198,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
           else:
             return min(possible_values, key=lambda x: x[0])
         
-        value, action = minimax(game_state, self.depth * game_state.get_num_agents(), 0)   # TODO change the 2nd arg. should not start at depth 0
+        value, action = minimax(game_state, self.depth * game_state.get_num_agents(), 0) 
         return action
         # END_YOUR_CODE
 
@@ -293,7 +292,6 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             p = 1 / (game_state.get_num_agents() - 1)
             e_v = sum([p * v[0] for v in possible_values])
             return e_v, None
-            # return min(possible_values, key=lambda x: x[0])
         
         value, action = minimax(game_state, self.depth * game_state.get_num_agents(), 0) 
         return action
