@@ -180,15 +180,18 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         # BEGIN_YOUR_CODE (our solution is 22 line(s) of code, but don't worry if you deviate from this)
         def minimax(game_state: GameState, depth: int, agent_idx: int):
+          # TODO these two branches function identically since eval_fn := get_score in this case. is this expected?
           if depth == 0:
-            return self.evaluation_function(game_state)
+            return self.evaluation_function(game_state), None
 
           if game_state.is_win() or game_state.is_lose():
             return game_state.get_score(), None
           
           possible_values = []
           for action in game_state.get_legal_actions(agent_idx):
-            v = (minimax(game_state.generate_successor(agent_idx, action), depth - 1, (agent_idx + 1) % game_state.get_num_agents())[0], action)
+            next_agent_idx = (agent_idx + 1) % game_state.get_num_agents()
+            next_game_state = game_state.generate_successor(agent_idx, action)
+            v = (minimax(next_game_state, depth - 1, next_agent_idx)[0], action)
             possible_values.append(v)
           
           if agent_idx == 0:
@@ -217,7 +220,38 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
 
         # BEGIN_YOUR_CODE (our solution is 43 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        def minimax(game_state: GameState, depth: int, agent_idx: int, alpha: float, beta: float):
+          if depth == 0:
+            return self.evaluation_function(game_state), None
+
+          if game_state.is_win() or game_state.is_lose():
+            return game_state.get_score(), None
+          
+          if agent_idx == 0:
+            possible_values = []
+            for action in game_state.get_legal_actions(agent_idx):
+              next_agent_idx = (agent_idx + 1) % game_state.get_num_agents()
+              next_game_state = game_state.generate_successor(agent_idx, action)
+              v = (minimax(next_game_state, depth - 1, next_agent_idx, alpha, beta)[0], action)
+              if v[0] >= beta:
+                return v
+              alpha = max(alpha, v[0])
+              possible_values.append(v)
+            return max(possible_values, key=lambda x: x[0])
+          else:
+            possible_values = []
+            for action in game_state.get_legal_actions(agent_idx):
+              next_agent_idx = (agent_idx + 1) % game_state.get_num_agents()
+              next_game_state = game_state.generate_successor(agent_idx, action)
+              v = (minimax(next_game_state, depth - 1, next_agent_idx, alpha, beta)[0], action)
+              if v[0] <= alpha:
+                return v
+              beta = min(beta, v[0])
+              possible_values.append(v)
+            return min(possible_values, key=lambda x: x[0])
+        
+        value, action = minimax(game_state, self.depth * game_state.get_num_agents(), 0, -float("inf"), float("inf"))
+        return action
         # END_YOUR_CODE
 
 ######################################################################################
