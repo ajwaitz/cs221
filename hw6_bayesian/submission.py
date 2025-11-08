@@ -25,7 +25,25 @@ def initialize_phylogenetic_tree(mutation_rate: float, genome_length: int=1) -> 
     if not (0.0 <= mutation_rate <= 1.0):
         raise ValueError("mutation_rate must be in [0, 1].")
     # BEGIN_YOUR_CODE (our solution is 19 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    # nodes = []
+    # network = BayesianNetwork(nodes=nodes)
+    domain = ["A", "C", "T", "G"]
+    thomas_bayus = BayesianNode(name="Thomas bayus", domain=domain, parents=[], conditional_prob_table=np.array([[0.25, 0.25, 0.25, 0.25]]))
+    humblus_studentus = BayesianNode(name="Humblus studentus", domain=domain, parents=[thomas_bayus], 
+                                     conditional_prob_table=np.array([[1 - mutation_rate, mutation_rate / 3, mutation_rate / 3, mutation_rate / 3],
+                                                                      [mutation_rate / 3, 1 - mutation_rate, mutation_rate / 3, mutation_rate / 3],
+                                                                      [mutation_rate / 3, mutation_rate / 3, 1 - mutation_rate, mutation_rate / 3],
+                                                                      [mutation_rate / 3, mutation_rate / 3, mutation_rate / 3, 1 - mutation_rate]]))
+    aryamus_bayus = BayesianNode(name="Aryamus bayus", domain=domain, parents=[thomas_bayus], 
+                                     conditional_prob_table=np.array([[1 - mutation_rate, mutation_rate / 3, mutation_rate / 3, mutation_rate / 3],
+                                                                      [mutation_rate / 3, 1 - mutation_rate, mutation_rate / 3, mutation_rate / 3],
+                                                                      [mutation_rate / 3, mutation_rate / 3, 1 - mutation_rate, mutation_rate / 3],
+                                                                      [mutation_rate / 3, mutation_rate / 3, mutation_rate / 3, 1 - mutation_rate]]))
+    kenius_bayus = BayesianNode(name="Kenius bayus", domain=domain, parents=[aryamus_bayus], 
+                                     conditional_prob_table=np.array([[1 - mutation_rate, mutation_rate / 3, mutation_rate / 3, mutation_rate / 3],
+                                                                      [mutation_rate / 3, 1 - mutation_rate, mutation_rate / 3, mutation_rate / 3],
+                                                                      [mutation_rate / 3, mutation_rate / 3, 1 - mutation_rate, mutation_rate / 3],
+                                                                      [mutation_rate / 3, mutation_rate / 3, mutation_rate / 3, 1 - mutation_rate]]))
     # END_YOUR_CODE
     network = BayesianNetwork([aryamus_bayus, humblus_studentus, thomas_bayus, kenius_bayus], batch_size=genome_length)
     return network
