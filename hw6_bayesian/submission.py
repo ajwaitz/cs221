@@ -70,7 +70,17 @@ def forward_sampling(network: BayesianNetwork) -> Dict[str, str]:
     for idx in range(network.batch_size):
         assignment: Dict[str, str] = {}
         # BEGIN_YOUR_CODE (our solution is 10 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        for node in network.order:
+            # Look at the domain, then compute corresponding probs
+            domain = node.domain
+            probs = [node.get_probability(d, parent_values=assignment) for d in domain]
+            # Now, sample from domain based on weights in probs
+            assert sum(probs) == 1.0, "Probs should sum to 1.0"         # Debugging. Do this to sanity check our approach
+            choices = random.choices(domain, weights=probs, k=1)
+            choice = choices[0]
+
+            assignment[node.name] = choice               # Choices w/ k=1 returns a len 1 list
+            samples[node.name].append(choice)
         # END_YOUR_CODE
 
     return samples
