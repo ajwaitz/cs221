@@ -73,8 +73,12 @@ def forward_sampling(network: BayesianNetwork) -> Dict[str, List[str]]:
         for node in network.order:
             # Look at the domain, then compute corresponding probs
             domain = node.domain
+            # [print(d) for d in domain]
             probs = [node.get_probability(d, parent_values=assignment) for d in domain]
+            if not (isinstance(probs[0], float) or isinstance(probs[0], np.float64)):
+                probs = probs[0]
             # Now, sample from domain based on weights in probs
+            # print(probs, sum(probs))
             assert sum(probs) == 1.0, "Probs should sum to 1.0"         # Debugging. Do this to sanity check our approach
             choices = random.choices(domain, weights=probs, k=1)
             choice = choices[0]
@@ -212,7 +216,23 @@ def gibbs_sampling(
 
     for _ in range(num_iterations):
         # BEGIN_YOUR_CODE (our solution is 12 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        for node in resample_nodes:
+            # Sample something new for state[node.name] and update counts
+            # How do we sample something new? 
+            # In forward sampling, we pick the top thing from the domain.
+            # In this case, we should do something similar but weighting elements in 
+            # the domain by the join probability.
+            for i in range(network.batch_size):
+                domain = node.domain
+                probs = []
+                for d in domain:
+                    new_state = state.copy()
+                    new_state[node.name][i] = d
+                    prob = compute_joint_probability(network, new_state, batch_indices=[i])
+                    probs.append(prob)
+                choice = random.choices(domain, probs, k=1)[0]
+                state[node.name][i] = choice
+            counts["".join(state[node.name])] += 1
         # END_YOUR_CODE
     total_samples = sum(counts.values())
     return {val: counts[val] / total_samples for val in counts.keys()}
