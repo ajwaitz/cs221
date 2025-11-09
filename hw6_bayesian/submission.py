@@ -286,13 +286,6 @@ def bayesian_network_for_annotators(num_annotators: int, dataset_size: int=1) ->
     root = BayesianNode(name="Y", domain=domain, parents=[], conditional_prob_table=np.array([[0.5, 0.5]]))
     nodes = [root]
     for i in range(num_annotators):
-        p_uniform = 1 / dataset_size
-        p_big = 2 * p_uniform
-        p_residual = 1 - p_big
-        p_residual_per = p_residual / (dataset_size - 1)
-        cpt_row = [p_residual_per] * dataset_size
-        cpt = np.array([cpt_row] * dataset_size)
-        cpt[np.eye(dataset_size)] = p_big
         annotator = BayesianNode(name=f"A_{i}", domain=domain, parents=[root], conditional_prob_table=np.array([[0.6, 0.4], [0.2, 0.8]]))
         nodes.append(annotator)
     network = BayesianNetwork(nodes, batch_size=dataset_size)
@@ -315,10 +308,18 @@ def accumulate_assignment(
     batch_size = len(list(assignment.values())[0])
     for i in range(batch_size) if batch_indices is None else range(len(batch_indices)):
         idx = batch_indices[i] if batch_indices is not None else i
-        assignment_i = {k: v[i] for k, v in assignment.items()}
+        assignment_i = {k: v[idx] for k, v in assignment.items()}           # This should be v[idx] not v[i] I think...
         for node in network.nodes:
             # BEGIN_YOUR_CODE (our solution is 7 line(s) of code, but don't worry if you deviate from this)
-            raise Exception("Not implemented yet")
+            if len(node.parents) == 0:
+                k = node.domain.index(assignment_i[node.name])
+                counts[node.name][0, k] += weight
+            else:
+                parent_indices = node.parent_assignment_indices(assignment_i)
+                for parent_i, parent in enumerate(node.parents):
+                    j = parent_indices[parent_i]
+                    k = node.domain.index(assignment_i[node.name])
+                    counts[node.name][j, k] += weight
             # END_YOUR_CODE
 
 def mle_estimation(network: BayesianNetwork, data: List[Dict[str, List[str]]], lambda_param: float = 1.0) -> BayesianNetwork:
@@ -326,7 +327,14 @@ def mle_estimation(network: BayesianNetwork, data: List[Dict[str, List[str]]], l
     Return the Bayesian network with the parameters estimated by MLE.
     """
     # BEGIN_YOUR_CODE (our solution is 7 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    # todo: use accumulate_assignment to initialize the cpt tables (params) for each network
+    counts = init_zero_conditional_probability_tables(network)
+    for cpt in counts.values():
+        cpt += lambda_param
+    for assignment in data:
+        accumulate_assignment(counts, network, assignment)
+    normalize_counts(network, counts)
+    return network
     # END_YOUR_CODE
 
 ############################################################
