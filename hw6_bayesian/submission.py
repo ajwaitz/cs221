@@ -51,7 +51,7 @@ def initialize_phylogenetic_tree(mutation_rate: float, genome_length: int=1) -> 
 ############################################################
 # Problem 2b: Sampling from Bayesian Networks
 
-def forward_sampling(network: BayesianNetwork) -> Dict[str, str]:
+def forward_sampling(network: BayesianNetwork) -> Dict[str, List[str]]:
     """
     Sample a single observation from the given Bayesian network.
 
@@ -106,7 +106,20 @@ def compute_joint_probability(
         The joint probability as a float
     """
     # BEGIN_YOUR_CODE (our solution is 16 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    if batch_indices is None:
+        batch_indices = range(network.batch_size)
+
+    prob = 1.0
+    for idx in batch_indices:
+        parent_values: Dict[str, str] = {}
+        for node in network.order:
+            local_prob = node.get_probability(assignment[node.name][idx], parent_values=parent_values)
+            # Weirdly, root nodes (no parents) return a [val] rather than just value. I suspect this is weird business bc of the cpt formatting?
+            if isinstance(local_prob, np.ndarray):
+                local_prob = local_prob[0]
+            prob *= local_prob
+            parent_values[node.name] = assignment[node.name][idx]
+    return prob
     # END_YOUR_CODE
 
 # ############################################################
@@ -148,7 +161,26 @@ def rejection_sampling(
         A dictionary mapping outcomes to their likelihoods, conditioned on the given assignments.
     """
     # BEGIN_YOUR_CODE (our solution is 14 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    unnormalized: Dict[str, int] = {}
+
+    for _ in range(num_samples):
+        sample = forward_sampling(network)
+        # Check if sample conforms with conditioning
+        valid = True
+        for cond_name, cond_form in conditioned_on_assignments.items():
+            if sample[cond_name] != cond_form:
+                valid = False
+                break
+
+        if valid:
+            hashable_key = "".join(sample[target_variable])
+            if hashable_key not in unnormalized:
+                unnormalized[hashable_key] = 0
+            unnormalized[hashable_key] += 1
+    
+    dist_mass = sum(unnormalized.values())
+    normalized: Dict[List[str], float]= {k: v / dist_mass for k, v in unnormalized.items()}
+    return normalized
     # END_YOUR_CODE
 
 ############################################################
