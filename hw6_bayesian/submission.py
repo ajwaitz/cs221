@@ -313,9 +313,11 @@ def accumulate_assignment(
             # BEGIN_YOUR_CODE (our solution is 7 line(s) of code, but don't worry if you deviate from this)
             if len(node.parents) == 0:
                 k = node.domain.index(assignment_i[node.name])
-                counts[node.name][0, k] += weight
+                counts[node.name][idx, k] += weight
             else:
                 parent_indices = node.parent_assignment_indices(assignment_i)
+                # print(counts[node.name].shape)
+                # should we think about batch for non-root nodes?
                 for parent_i, parent in enumerate(node.parents):
                     j = parent_indices[parent_i]
                     k = node.domain.index(assignment_i[node.name])
@@ -345,7 +347,9 @@ def mle_estimation_for_annotators(data: List[Dict[str, List[str]]]) -> BayesianN
     Return the Bayesian network with the parameters estimated by MLE for the annotators.
     """
     # BEGIN_YOUR_CODE (our solution is 2 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    network = bayesian_network_for_annotators(3, 1)
+    network = mle_estimation(network, data)
+    return network
     # END_YOUR_CODE
 
 def test_mle_estimation_for_annotators():
@@ -365,7 +369,45 @@ def e_step(
     Create the dataset of fully-observed weighted observations given some hidden variables, for the EM algorithm.
     """
     # BEGIN_YOUR_CODE (our solution is 33 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    completions = []
+    weights = []
+    indices = []
+
+    # hidden_nodes = []
+    # for node in network.order:
+    #     if node.name not in data[0].keys():
+    #         hidden_nodes.append(node)
+
+    for data_i, x in enumerate(data):
+        q = {}
+        # TODO is asssuming the topologically first element is hidden fine? This is making an assumption
+        # about what Bayesian network we're using.
+        hidden = network.order[0]
+        for i in range(network.batch_size):
+            assignment = {k: v[i] for k, v in x.items()}
+            probs = []
+            for d in hidden.domain:
+                # TODO this is a bug. hidden has no parents, so we can condition this way. actually should we be using bayes here?
+                # probs.append(hidden.get_probability(d, parent_values=assignment))
+                prob = hidden.get_probability(d)
+                for child in hidden.children:
+                    prob *= child.get_probability(assignment[child.name], parent_values={hidden.name: d})
+                probs.append(prob)
+            if len(q.values()) == 0:
+                q = {q: v for q, v in zip(hidden.domain, probs)}
+            else:
+                q_new = {}
+                for k, v in q.items():
+                    for d, p in zip(hidden.domain, probs):
+                        q_new[k + d] = v * p
+                q = q_new
+        # TODO k is a string, not list of chars (strings) yet. so this needs to be fixed.
+        normalize_counts(network, q_new)
+        for k, v in q_new.items():
+            completions.append(k)
+            weights.append(v)
+            indices.append(data_i)
+    return completions, weights, indices
     # END_YOUR_CODE
 
 ############################################################
@@ -381,7 +423,12 @@ def m_step(
     Update the CPTs of the Bayesian network using expected counts.
     """
     # BEGIN_YOUR_CODE (our solution is 5 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    for i in range(len(all_completions)):
+        completion = all_completions[i]
+        weight = all_weights[i]
+        index = all_indices[i]
+
+
     # END_YOUR_CODE
 
 ############################################################
@@ -392,7 +439,10 @@ def em_learn(network: BayesianNetwork, data: List[Dict[str, str]], num_iteration
     Run the EM algorithm for a given number of iterations.
     """
     # BEGIN_YOUR_CODE (our solution is 4 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    for _ in range(num_iterations):
+        completions, weights, indices = e_step(network, data)
+        network = m_step(network, completions, weights, indices)
+    return network
     # END_YOUR_CODE
 
 def test_em_learn():
