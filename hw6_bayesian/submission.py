@@ -75,8 +75,10 @@ def forward_sampling(network: BayesianNetwork) -> Dict[str, List[str]]:
             domain = node.domain
             # [print(d) for d in domain]
             probs = [node.get_probability(d, parent_values=assignment) for d in domain]
-            if not (isinstance(probs[0], float) or isinstance(probs[0], np.float64)):
+            # print(probs)
+            if not (isinstance(probs[0], float) or isinstance(probs[0], np.float64) or probs[0].size == 1):
                 probs = probs[0]
+            # print(probs)
             # Now, sample from domain based on weights in probs
             # print(probs, sum(probs))
             assert sum(probs) == 1.0, "Probs should sum to 1.0"         # Debugging. Do this to sanity check our approach
@@ -279,7 +281,22 @@ def bayesian_network_for_annotators(num_annotators: int, dataset_size: int=1) ->
     Return the Bayesian network for the annotators.
     """
     # BEGIN_YOUR_CODE (our solution is 14 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    domain = ["good", "bad"]
+    # Assuming root is uniformly distributed. 
+    root = BayesianNode(name="Y", domain=domain, parents=[], conditional_prob_table=np.array([[0.5, 0.5]]))
+    nodes = [root]
+    for i in range(num_annotators):
+        p_uniform = 1 / dataset_size
+        p_big = 2 * p_uniform
+        p_residual = 1 - p_big
+        p_residual_per = p_residual / (dataset_size - 1)
+        cpt_row = [p_residual_per] * dataset_size
+        cpt = np.array([cpt_row] * dataset_size)
+        cpt[np.eye(dataset_size)] = p_big
+        annotator = BayesianNode(name=f"A_{i}", domain=domain, parents=[root], conditional_prob_table=np.array([[0.6, 0.4], [0.2, 0.8]]))
+        nodes.append(annotator)
+    network = BayesianNetwork(nodes, batch_size=dataset_size)
+    return network
     # END_YOUR_CODE
 
 ############################################################
