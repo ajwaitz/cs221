@@ -319,10 +319,7 @@ def accumulate_assignment(
             # BEGIN_YOUR_CODE (our solution is 7 line(s) of code, but don't worry if you deviate from this)
             if len(node.parents) == 0:
                 k = node.domain.index(assignment_i[node.name])
-                try:
-                    counts[node.name][idx, k] += weight
-                except:
-                    counts[node.name][0, k] += weight
+                counts[node.name][idx, k] += weight
             else:
                 parent_indices = node.parent_assignment_indices(assignment_i)
                 # print(counts[node.name].shape)
@@ -356,7 +353,7 @@ def mle_estimation_for_annotators(data: List[Dict[str, List[str]]]) -> BayesianN
     Return the Bayesian network with the parameters estimated by MLE for the annotators.
     """
     # BEGIN_YOUR_CODE (our solution is 2 line(s) of code, but don't worry if you deviate from this)
-    network = bayesian_network_for_annotators(3, 1)
+    network = bayesian_network_for_annotators(3, len(data[0]['Y']))
     network = mle_estimation(network, data)
     return network
     # END_YOUR_CODE
@@ -389,9 +386,10 @@ def e_step(
                 hidden_nodes.append(node)
 
         if len(hidden_nodes) == 0:
-            completions.append(partial_assignment)
-            weights.append(1.0)
-            indices.append([partial_i])
+            for batch_idx in range(network.batch_size):
+                completions.append(partial_assignment)
+                weights.append(1.0)
+                indices.append([batch_idx])
             continue
 
         unnormalized_weights = []
@@ -411,7 +409,6 @@ def e_step(
                 full_assignment[name] = [choice] * network.batch_size
             # Compute weight
             for batch_idx in range(network.batch_size):
-                # local_assignment = {k: v[batch_idx] for k, v in full_assignment.items()}
                 weight = compute_joint_probability(network, full_assignment, batch_indices=[batch_idx])
                 completions.append(full_assignment)
                 unnormalized_weights.append(weight)
