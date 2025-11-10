@@ -25,8 +25,6 @@ def initialize_phylogenetic_tree(mutation_rate: float, genome_length: int=1) -> 
     if not (0.0 <= mutation_rate <= 1.0):
         raise ValueError("mutation_rate must be in [0, 1].")
     # BEGIN_YOUR_CODE (our solution is 19 line(s) of code, but don't worry if you deviate from this)
-    # nodes = []
-    # network = BayesianNetwork(nodes=nodes)
     domain = ["A", "C", "T", "G"]
     thomas_bayus = BayesianNode(name="Thomas bayus", domain=domain, parents=[], conditional_prob_table=np.array([[0.25, 0.25, 0.25, 0.25]]))
     humblus_studentus = BayesianNode(name="Humblus studentus", domain=domain, parents=[thomas_bayus], 
@@ -73,19 +71,14 @@ def forward_sampling(network: BayesianNetwork) -> Dict[str, List[str]]:
         for node in network.order:
             # Look at the domain, then compute corresponding probs
             domain = node.domain
-            # [print(d) for d in domain]
-            # print(node.get_probability(domain[0], parent_values=assignment))
             if len(node.parents) == 0:
                 probs = [node.get_probability(d, parent_values=assignment)[idx] for d in domain]
             else:
                 probs = [node.get_probability(d, parent_values=assignment) for d in domain]
-            # print(probs)
             if not (isinstance(probs[0], float) or isinstance(probs[0], np.float64) or probs[0].size == 1):
                 probs = probs[0]
-            # print(probs)
             # Now, sample from domain based on weights in probs
-            # print(probs, sum(probs))
-            assert sum(probs) == 1.0, "Probs should sum to 1.0"         # Debugging. Do this to sanity check our approach
+            # assert sum(probs) == 1.0, "Probs should sum to 1.0"         # Debugging. Do this to sanity check our approach
             choices = random.choices(domain, weights=probs, k=1)
             choice = choices[0]
 
@@ -322,7 +315,6 @@ def accumulate_assignment(
                 counts[node.name][idx, k] += weight
             else:
                 parent_indices = node.parent_assignment_indices(assignment_i)
-                # print(counts[node.name].shape)
                 # should we think about batch for non-root nodes?
                 for parent_i, parent in enumerate(node.parents):
                     j = parent_indices[parent_i]
@@ -335,7 +327,6 @@ def mle_estimation(network: BayesianNetwork, data: List[Dict[str, List[str]]], l
     Return the Bayesian network with the parameters estimated by MLE.
     """
     # BEGIN_YOUR_CODE (our solution is 7 line(s) of code, but don't worry if you deviate from this)
-    # todo: use accumulate_assignment to initialize the cpt tables (params) for each network
     counts = init_zero_conditional_probability_tables(network)
     for cpt in counts.values():
         cpt += lambda_param
@@ -394,7 +385,7 @@ def e_step(
 
         unnormalized_weights = []
         # We want to fill out partial_assignment.
-        # Algo
+        # Algo:
         # For each hidden node, we iterate over all possibilites for the domain
         # Then, we do cartesian product across all possibilities across all nodes?
         possibilities: List[List[str]] = []
