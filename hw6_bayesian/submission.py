@@ -378,30 +378,64 @@ def e_step(
         if node.name not in data[0].keys():
             hidden_nodes.append(node)
 
-    # Code from init_zero_conditional_probability_tables
-    counts = {
-        node.name: node.conditional_prob_table
-        for node in network.nodes
-    }
+    for partial_i, partial_assignment in enumerate(data):
+        unnormalized_weights = []
+        # We want to fill out partial_assignment.
+        # Algo
+        # For each hidden node, we iterate over all possibilites for the domain
+        # Then, we do cartesian product across all possibilities across all nodes?
+        possibilities: List[List[str]] = []
+        for node in hidden_nodes:
+            possibilities.append(node.domain)
 
-    """
-    Algorithm
-    For each assignment, build all possible configurations with the hidden variables
-    For each hidden variable, search over all possibilities
-    Cartesian product of num H x num possibilities per batch_pos x batch_size
-    """
-    for assignment in data:
-        all_posibilities = []           # Contains all potential completions for assignment
-        # Compute a hidden assignment
-        for hidden in hidden_nodes:
-            domain = hidden.domain
-            for d in domain:
-                new_assignment = assignment.copy()
-                new_assignment[hidden.name].append(d)
-                # weight *= child.get_probability(assignment[child.name], parent_values={hidden.name: d})
-        # accumulate_assignment(counts, network, assignment, weight=weight)
+        for choices in product(*possibilities):
+            full_assignment: Dict[str, List[str]] = partial_assignment.copy()
+            for idx, choice in enumerate(choices):
+                name = hidden_nodes[idx].name
+                full_assignment[name] = [choice]
+            weight = compute_joint_probability(network, full_assignment)
+            completions.append(full_assignment)
+            unnormalized_weights.append(weight)
+            indices.append(partial_i)
+
+        weight_mass = sum(unnormalized_weights)
+        normalized_weights = [x / weight_mass for x in unnormalized_weights]
+        weights.extend(normalized_weights)
 
     return completions, weights, indices
+    # completions = []
+    # weights = []
+    # indices = []
+
+    # hidden_nodes = []
+    # for node in network.order:
+    #     if node.name not in data[0].keys():
+    #         hidden_nodes.append(node)
+
+    # # Code from init_zero_conditional_probability_tables
+    # counts = {
+    #     node.name: node.conditional_prob_table
+    #     for node in network.nodes
+    # }
+
+    # """
+    # Algorithm
+    # For each assignment, build all possible configurations with the hidden variables
+    # For each hidden variable, search over all possibilities
+    # Cartesian product of num H x num possibilities per batch_pos x batch_size
+    # """
+    # for assignment in data:
+    #     all_posibilities = []           # Contains all potential completions for assignment
+    #     # Compute a hidden assignment
+    #     for hidden in hidden_nodes:
+    #         domain = hidden.domain
+    #         for d in domain:
+    #             new_assignment = assignment.copy()
+    #             new_assignment[hidden.name].append(d)
+    #             # weight *= child.get_probability(assignment[child.name], parent_values={hidden.name: d})
+    #     # accumulate_assignment(counts, network, assignment, weight=weight)
+
+    # return completions, weights, indices
     # completions = []
     # weights = []
     # indices = []
