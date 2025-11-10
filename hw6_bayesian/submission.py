@@ -126,7 +126,7 @@ def compute_joint_probability(
             local_prob = node.get_probability(assignment[node.name][idx], parent_values=parent_values)
             # Weirdly, root nodes (no parents) return a [val] rather than just value. I suspect this is weird business bc of the cpt formatting?
             if isinstance(local_prob, np.ndarray):
-                local_prob = local_prob[0]
+                local_prob = local_prob[idx]
             prob *= local_prob
             parent_values[node.name] = assignment[node.name][idx]
     return prob
