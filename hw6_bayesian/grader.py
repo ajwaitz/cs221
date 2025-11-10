@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+from cProfile import label
 import grader_util
 import sys
 import random
@@ -695,7 +696,9 @@ def test_4c_1():
     labels_final = trained.get_node_by_name('Y').conditional_prob_table
     annot_final = trained.get_node_by_name('A_0').conditional_prob_table
 
+    print(labels_initial, labels_final)
     grader.require_is_true(not np.allclose(labels_final, labels_initial))
+    print(annot_initial, annot_final)
     grader.require_is_true(not np.allclose(annot_final, annot_initial))
 
 grader.add_basic_part('4c-1-basic', test_4c_1, max_points=2,
