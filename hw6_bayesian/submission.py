@@ -373,12 +373,18 @@ def e_step(
     weights = []
     indices = []
 
-    hidden_nodes = []
-    for node in network.order:
-        if node.name not in data[0].keys():
-            hidden_nodes.append(node)
-
     for partial_i, partial_assignment in enumerate(data):
+        hidden_nodes = []
+        for node in network.order:
+            if node.name not in partial_assignment.keys():
+                hidden_nodes.append(node)
+
+        if len(hidden_nodes) == 0:
+            completions.append(partial_assignment)
+            weights.append(1.0)
+            indices.append([partial_i])
+            continue
+
         unnormalized_weights = []
         # We want to fill out partial_assignment.
         # Algo
@@ -396,81 +402,13 @@ def e_step(
             weight = compute_joint_probability(network, full_assignment)
             completions.append(full_assignment)
             unnormalized_weights.append(weight)
-            indices.append(partial_i)
+            indices.append([partial_i])
 
         weight_mass = sum(unnormalized_weights)
         normalized_weights = [x / weight_mass for x in unnormalized_weights]
         weights.extend(normalized_weights)
 
     return completions, weights, indices
-    # completions = []
-    # weights = []
-    # indices = []
-
-    # hidden_nodes = []
-    # for node in network.order:
-    #     if node.name not in data[0].keys():
-    #         hidden_nodes.append(node)
-
-    # # Code from init_zero_conditional_probability_tables
-    # counts = {
-    #     node.name: node.conditional_prob_table
-    #     for node in network.nodes
-    # }
-
-    # """
-    # Algorithm
-    # For each assignment, build all possible configurations with the hidden variables
-    # For each hidden variable, search over all possibilities
-    # Cartesian product of num H x num possibilities per batch_pos x batch_size
-    # """
-    # for assignment in data:
-    #     all_posibilities = []           # Contains all potential completions for assignment
-    #     # Compute a hidden assignment
-    #     for hidden in hidden_nodes:
-    #         domain = hidden.domain
-    #         for d in domain:
-    #             new_assignment = assignment.copy()
-    #             new_assignment[hidden.name].append(d)
-    #             # weight *= child.get_probability(assignment[child.name], parent_values={hidden.name: d})
-    #     # accumulate_assignment(counts, network, assignment, weight=weight)
-
-    # return completions, weights, indices
-    # completions = []
-    # weights = []
-    # indices = []
-
-    # for data_i, x in enumerate(data):
-    #     q = {}
-    #     # TODO is asssuming the topologically first element is hidden fine? This is making an assumption
-    #     # about what Bayesian network we're using.
-    #     hidden = network.order[0]
-    #     for i in range(network.batch_size):
-    #         assignment = {k: v[i] for k, v in x.items()}
-    #         probs = []
-    #         for d in hidden.domain:
-    #             # TODO this is a bug. hidden has no parents, so we can condition this way. actually should we be using bayes here?
-    #             # probs.append(hidden.get_probability(d, parent_values=assignment))
-    #             prob = hidden.get_probability(d)
-    #             for child in hidden.children:
-    #                 prob *= child.get_probability(assignment[child.name], parent_values={hidden.name: d})
-    #             probs.append(prob)
-    #         if len(q.values()) == 0:
-    #             q = {q: v for q, v in zip(hidden.domain, probs)}
-    #         else:
-    #             q_new = {}
-    #             for k, v in q.items():
-    #                 for d, p in zip(hidden.domain, probs):
-    #                     q_new[k + d] = v * p
-    #             q = q_new
-    #     # TODO k is a string, not list of chars (strings) yet. so this needs to be fixed.
-    #     # normalize_counts(network, q_new)
-
-    #     for k, v in q.items():
-    #         completions.append(k)
-    #         weights.append(v)
-    #         indices.append(data_i)
-    # return completions, weights, indices
     # END_YOUR_CODE
 
 ############################################################
