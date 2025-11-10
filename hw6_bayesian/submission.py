@@ -74,7 +74,11 @@ def forward_sampling(network: BayesianNetwork) -> Dict[str, List[str]]:
             # Look at the domain, then compute corresponding probs
             domain = node.domain
             # [print(d) for d in domain]
-            probs = [node.get_probability(d, parent_values=assignment) for d in domain]
+            # print(node.get_probability(domain[0], parent_values=assignment))
+            if len(node.parents) == 0:
+                probs = [node.get_probability(d, parent_values=assignment)[idx] for d in domain]
+            else:
+                probs = [node.get_probability(d, parent_values=assignment) for d in domain]
             # print(probs)
             if not (isinstance(probs[0], float) or isinstance(probs[0], np.float64) or probs[0].size == 1):
                 probs = probs[0]
@@ -135,7 +139,9 @@ def test_forward_sampling():
     np.random.seed(123)
     random.seed(123)
     # BEGIN_YOUR_CODE (our solution is 3 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    network = initialize_phylogenetic_tree(0.1, 10)
+    sample = forward_sampling(network)
+    joint_probability = compute_joint_probability(network, sample)
     # END_YOUR_CODE
     print(sample)
     print(f"{joint_probability:.10%}")
@@ -259,11 +265,11 @@ def test_gibbs_vs_rejection(
 
     vals = gibbs_sampling(
         network, 'Thomas bayus', {'Kenius bayus': kenius_bayus_genome}, num_iterations=num_steps)
-    gibbs_p_aaac = vals.get(('A', 'A', 'A', 'C'), 0.0)
+    gibbs_p_aaac = vals.get(('AAAC'), 0.0)
 
     rejection_vals = rejection_sampling(
         network, 'Thomas bayus', {'Kenius bayus': kenius_bayus_genome}, num_samples=num_steps)
-    rejection_p_aaac = rejection_vals.get(('A', 'A', 'A', 'C'), 0.0)
+    rejection_p_aaac = rejection_vals.get(('AAAC'), 0.0)
 
     print(f"{'Gibbs':>10} {gibbs_p_aaac:.4f}")
     print(f"{'Rejection':>10} {rejection_p_aaac:.4f}")
@@ -313,7 +319,10 @@ def accumulate_assignment(
             # BEGIN_YOUR_CODE (our solution is 7 line(s) of code, but don't worry if you deviate from this)
             if len(node.parents) == 0:
                 k = node.domain.index(assignment_i[node.name])
-                counts[node.name][idx, k] += weight
+                try:
+                    counts[node.name][idx, k] += weight
+                except:
+                    counts[node.name][0, k] += weight
             else:
                 parent_indices = node.parent_assignment_indices(assignment_i)
                 # print(counts[node.name].shape)
@@ -401,10 +410,12 @@ def e_step(
                 name = hidden_nodes[idx].name
                 full_assignment[name] = [choice] * network.batch_size
             # Compute weight
-            weight = compute_joint_probability(network, full_assignment)
-            completions.append(full_assignment)
-            unnormalized_weights.append(weight)
-            indices.append([partial_i])
+            for batch_idx in range(network.batch_size):
+                # local_assignment = {k: v[batch_idx] for k, v in full_assignment.items()}
+                weight = compute_joint_probability(network, full_assignment, batch_indices=[batch_idx])
+                completions.append(full_assignment)
+                unnormalized_weights.append(weight)
+                indices.append([batch_idx])
 
         weight_mass = sum(unnormalized_weights)
         normalized_weights = [x / weight_mass for x in unnormalized_weights]
@@ -431,7 +442,7 @@ def m_step(
         completion = all_completions[i]
         weight = all_weights[i]
         index = all_indices[i]
-        accumulate_assignment(counts, network, completion, weight)
+        accumulate_assignment(counts, network, completion, weight, index)
     normalize_counts(network, counts)
     return network
     # END_YOUR_CODE
