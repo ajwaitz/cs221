@@ -396,9 +396,11 @@ def e_step(
 
         for choices in product(*possibilities):
             full_assignment: Dict[str, List[str]] = partial_assignment.copy()
+            # Fill out full_assignment
             for idx, choice in enumerate(choices):
                 name = hidden_nodes[idx].name
-                full_assignment[name] = [choice]
+                full_assignment[name] = [choice] * network.batch_size
+            # Compute weight
             weight = compute_joint_probability(network, full_assignment)
             completions.append(full_assignment)
             unnormalized_weights.append(weight)
@@ -429,7 +431,7 @@ def m_step(
         completion = all_completions[i]
         weight = all_weights[i]
         index = all_indices[i]
-        accumulate_assignment(counts, network, completion, weight, index)
+        accumulate_assignment(counts, network, completion, weight)
     normalize_counts(network, counts)
     return network
     # END_YOUR_CODE
