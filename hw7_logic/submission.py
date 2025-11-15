@@ -106,7 +106,6 @@ def formula2d() -> Formula:
         return Atom("Granddaughter", x, y)  # whether x has a granddaughter y
 
     # BEGIN_YOUR_CODE (our solution is 13 line(s) of code, but don't worry if you deviate from this)
-    # TODO refactor this
     return Forall("$x", Forall("$y", Equiv(Granddaughter("$x", "$y"), And(Female("$y"), Exists("$z", And(Child("$x", "$z"), Child("$z", "$y")))))))
     # END_YOUR_CODE
 
