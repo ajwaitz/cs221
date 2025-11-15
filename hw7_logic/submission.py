@@ -149,10 +149,10 @@ def liar() -> Tuple[List[Formula], Formula]:
     formulas.append(Equiv(TellTruth(susan), Not(TellTruth(nicole))))
 
     def ExactlyOne(x, y, cond):
-        return Exists(x, Forall(y, Equiv(Equals(x, y), cond(x))))
+        return Exists(x, Forall(y, Equiv(Equals(x, y), cond(y))))
 
-    formulas.append(ExactlyOne("$x", "$y", TellTruth))
-    formulas.append(ExactlyOne("$x", "$y", CrashedServer))
+    formulas.append(ExactlyOne("$a", "$b", TellTruth))
+    formulas.append(ExactlyOne("$c", "$d", CrashedServer))
     # END_YOUR_CODE
     query = CrashedServer("$x")
     return (formulas, query)
