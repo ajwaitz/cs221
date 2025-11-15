@@ -194,7 +194,19 @@ def ints() -> Tuple[List[Formula], Formula]:
     formulas = []
     query = None
     # BEGIN_YOUR_CODE (our solution is 44 line(s) of code, but don't worry if you deviate from this)
-    formulas.append(Forall("$x", Exists("$y", And(Not(Equals("$x", "$y")), Successor("$x", "$y")))))
+    def ExactlyOne(x, y, cond):
+        return Exists(x, Forall(y, Equiv(Equals(x, y), cond(y))))
+
+    formulas.append(Forall("$x", Exists("$y", Forall("$z", Equiv(Equals("$y", "$z"), And(Not(Equals("$x", "$z")), Successor("$x", "$z")))))))       # yikes
+    formulas.append(Forall("$x", Xor(Even("$x"), Odd("$x"))))
+    formulas.append(Forall("$x", Implies(Even("$x"), Forall("$y", Implies(Successor("$x", "$y"), Odd("$y"))))))
+    formulas.append(Forall("$x", Implies(Odd("$x"), Forall("$y", Implies(Successor("$x", "$y"), Even("$y"))))))
+    formulas.append(Forall("$x", Forall("$y", Implies(Successor("$x", "$y"), Larger("$y", "$x")))))
+    formulas.append(Forall("$x", Forall("$y", Forall("$z", Implies(And(Larger("$y", "$x"), Larger("$z", "$y")), Larger("$z", "$x"))))))
+
+
+    # formulas.append(Forall("$x", Forall("$y", Implies(And(Even("$x"), Successor("$x", "$y")), Odd("y")))))
+    # formulas.append(Forall("$x", Forall("$y", Implies(And(Odd("$x"), Successor("$x", "$y")), Even("y")))))
     # END_YOUR_CODE
     query = Forall("$x", Exists("$y", And(Even("$y"), Larger("$y", "$x"))))
     return (formulas, query)
