@@ -230,19 +230,42 @@ def create_rule1() -> GrammarRule:
     # Return a GrammarRule for 'every $Noun $Verb some $Noun'
     # Note: universal quantification should be outside existential quantification.
     # BEGIN_YOUR_CODE (our solution is 14 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    # raise Exception("Not implemented yet")
+    def fn(args):
+        print(args)
+        return Forall("$x", 
+                Implies(Atom(args[0].title(), "$x"), 
+                    Exists("$y", 
+                        And(Atom(args[2].title(), "$y"), Atom(args[1].title(), "$x", "$y")))))
+
+    return GrammarRule("$Clause", ["every", "$Noun", "$Verb", "some", "$Noun"], fn)
     # END_YOUR_CODE
 
 
 def create_rule2() -> GrammarRule:
     # Return a GrammarRule for 'there is some $Noun that every $Noun $Verb'
     # BEGIN_YOUR_CODE (our solution is 16 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    # raise Exception("Not implemented yet")
+
+    def fn(args):
+        print(args)
+        return Exists("$x", And(Atom(args[0].title(), "$x"), 
+                      Forall("$y", Implies(Atom(args[1].title(), "$y"), Atom(args[2].title(), "$y", "$x")))))
+
+    return GrammarRule("$Clause", ["there", "is", "some", "$Noun", "that", "every", "$Noun", "$Verb"], fn)
     # END_YOUR_CODE
 
 
 def create_rule3() -> GrammarRule:
     # Return a GrammarRule for 'if a $Noun $Verb a $Noun then the former $Verb the latter'
     # BEGIN_YOUR_CODE (our solution is 22 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    # raise Exception("Not implemented yet")
+    def fn(args):
+        print(args)
+        return Forall("$x", Forall("$y", 
+                    Implies(And(Atom(args[0].title(), "$x"),
+                            And(Atom(args[2].title(), "$y"), Atom(args[1].title(), "$x", "$y"))),
+                            Atom(args[3].title(), "$x", "$y"))))
+    
+    return GrammarRule("$Clause", ["if", "a", "$Noun", "$Verb", "a", "$Noun", "then", "the", "former", "$Verb", "the", "latter"], fn)
     # END_YOUR_CODE
